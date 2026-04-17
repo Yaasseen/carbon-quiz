@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Carbon Footprint — Mauritius</title>
+
+  <!--
+  ============================================================
+  SETUP INSTRUCTIONS — READ BEFORE DEPLOYING
+  ============================================================
+
+  STEP 1 — Create your Google Sheet
+  ----------------------------------
+  1. Go to https://sheets.google.com and create a new spreadsheet
+  2. Name the first sheet "Responses"
+  3. Add these headers in row 1 (one per column):
+     A: Timestamp
+     B: Total (t CO2)
+     C: Transport
+     D: Home & AC
+     E: Flights
+     F: Food
+     G: Shopping
+     H: Digital
+     I: Department (optional)
+
+  STEP 2 — Create the Apps Script
+  ----------------------------------
+  1. In your Google Sheet, click Extensions > Apps Script
+  2. Delete any existing code and paste this entire script:
+
+  -------------------------------------------------------
+  const SHEET_NAME = "Responses";
+
+  function doPost(e) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    const data = JSON.parse(e.postData.contents);
+    sheet.appendRow([
+      new Date().toISOString(),
+      data.total,
+      data.transport,
+      data.home,
+      data.flights,
+      data.food,
+      data.shopping,
+      data.digital,
+      data.department || ""
+    ]);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "ok" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  function doGet(e) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: "ok" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  -------------------------------------------------------
+
+  3. Click Save (name the project anything, e.g. "Carbon Quiz")
+  4. Click Deploy > New deployment
+  5. Select type: Web app
+  6. Set "Execute as": Me
+  7. Set "Who has access": Anyone
+  8. Click Deploy and copy the Web App URL
+
+  STEP 3 — Paste your URL below
+  ----------------------------------
+  Replace the placeholder in the CONFIG section below with your Web App URL.
+
+  STEP 4 — Host the quiz
+  ----------------------------------
+  Options (pick one):
+  a) Upload this file to GitHub Pages (free, permanent URL)
+  b) Drop into SharePoint or your company intranet
+  c) Embed in Notion using a full-page embed block
+  d) Host on any static file server
+
+  STEP 5 — Dashboard in Google Sheets
+  ----------------------------------
+  Create a second sheet tab called "Dashboard" and use these formulas
+  referencing the Responses sheet to build your consolidated view:
+
+  - Total responses:      =COUNTA(Responses!A2:A)
+  - Average score:        =AVERAGE(Responses!B2:B)
+  - Lowest score:         =MIN(Responses!B2:B)
+  - Highest score:        =MAX(Responses!B2:B)
+  - Avg transport:        =AVERAGE(Responses!C2:C)
+  - Avg home/AC:          =AVERAGE(Responses!D2:D)
+  - Avg flights:          =AVERAGE(Responses!E2:E)
+  - Avg food:             =AVERAGE(Responses!F2:F)
+  - Avg shopping:         =AVERAGE(Responses!G2:G)
+  - Avg digital:          =AVERAGE(Responses!H2:H)
+
+  Then use Insert > Chart on those averages to create a bar chart
+  showing the company's average footprint breakdown by category.
+
+  ============================================================
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── CONFIG: paste your Apps Script Web App URL here ── */
+    /* See STEP 3 in the setup instructions above           */
+
+    :root {
+      --green-dark:  #085041;
+      --green-mid:   #1D9E75;
+      --green-light: #E1F5EE;
+      --green-pale:  #F2FBF7;
+      --amber:       #EF9F27;
+      --coral:       #D85A30;
+      --text:        #1a1a1a;
+      --text-muted:  #5a6a63;
+      --text-hint:   #8fa89f;
+      --border:      rgba(0,0,0,0.08);
+      --bg:          #fafcfb;
+      --card:        #ffffff;
+      --radius:      12px;
+      --radius-sm:   8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 1rem 4rem;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      width: 100%;
+      max-width: 680px;
+      padding: 2.5rem 0 2rem;
+      text-align: center;
+    }
+
+    .site-header .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--green-mid);
+      margin-bottom: 10px;
+    }
+
+    .site-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 5vw, 40px);
+      color: var(--green-dark);
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .site-header p {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-hint);
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--green-mid);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2rem 1.5rem;
+      width: 100%;
+      max-width: 680px;
+      animation: fadeUp 0.3s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-tag {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--green-mid);
+      margin-bottom: 6px;
+    }
+
+    .question-text {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(17px, 3vw, 21px);
+      color: var(--green-dark);
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: var(--text-hint);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+      font-style: italic;
+    }
+
+    /* ── Options ── */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 1.75rem;
+    }
+
+    .option-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 16px;
+      text-align: left;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .option-btn:hover {
+      border-color: var(--green-mid);
+      background: var(--green-pale);
+    }
+
+    .option-btn.selected {
+      border-color: var(--green-mid);
+      background: var(--green-light);
+      color: var(--green-dark);
+      font-weight: 500;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn:hover:not(:disabled) { background: var(--bg); border-color: #ccc; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--green-dark);
+      color: #fff;
+      border-color: var(--green-dark);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--green-mid);
+      border-color: var(--green-mid);
+    }
+
+    /* ── Department field ── */
+    .dept-wrap {
+      margin-bottom: 1.5rem;
+    }
+
+    .dept-wrap label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .dept-wrap input {
+      width: 100%;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .dept-wrap input:focus { border-color: var(--green-mid); }
+    .dept-wrap input::placeholder { color: var(--text-hint); }
+
+    /* ── Result screen ── */
+    .result-screen { width: 100%; max-width: 680px; }
+
+    .score-hero {
+      background: var(--green-dark);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .score-hero .label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 8px;
+    }
+
+    .score-hero .score-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(52px, 12vw, 80px);
+      color: #fff;
+      line-height: 1;
+    }
+
+    .score-hero .score-unit {
+      font-size: 16px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+
+    .score-hero .score-note {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 10px;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* ── Benchmarks ── */
+    .benchmarks {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease 0.05s both;
+    }
+
+    @media (max-width: 480px) {
+      .benchmarks { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .bench-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .bench-card.you {
+      border-color: var(--green-mid);
+      background: var(--green-light);
+    }
+
+    .bench-card .b-label {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-bottom: 4px;
+    }
+
+    .bench-card.you .b-label { color: var(--green-mid); }
+
+    .bench-card .b-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .bench-card.you .b-val { color: var(--green-dark); }
+
+    /* ── Breakdown ── */
+    .breakdown-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease 0.1s both;
+    }
+
+    .breakdown-card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--green-dark);
+      margin-bottom: 1rem;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .bar-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      width: 100px;
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 7px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease;
+    }
+
+    .bar-fill.low  { background: var(--green-mid); }
+    .bar-fill.mid  { background: var(--amber); }
+    .bar-fill.high { background: var(--coral); }
+
+    .bar-val {
+      font-size: 12px;
+      color: var(--text-hint);
+      width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Tip box ── */
+    .tip-card {
+      background: var(--green-light);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease 0.15s both;
+    }
+
+    .tip-card .tip-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--green-mid);
+      margin-bottom: 6px;
+    }
+
+    .tip-card p {
+      font-size: 14px;
+      color: var(--green-dark);
+      line-height: 1.7;
+    }
+
+    /* ── Submit block ── */
+    .submit-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      animation: fadeUp 0.4s ease 0.2s both;
+    }
+
+    .submit-block h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+    }
+
+    .submit-block p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .submit-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .submit-row input {
+      flex: 1;
+      min-width: 180px;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .submit-row input:focus { border-color: var(--green-mid); }
+    .submit-row input::placeholder { color: var(--text-hint); }
+
+    .status-msg {
+      font-size: 13px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      display: none;
+    }
+
+    .status-msg.success {
+      background: var(--green-light);
+      color: var(--green-dark);
+      display: block;
+    }
+
+    .status-msg.error {
+      background: #FAECE7;
+      color: #712B13;
+      display: block;
+    }
+
+    /* ── Result footer ── */
+    .result-footer {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.4s ease 0.25s both;
+    }
+
+    .result-footer .btn { flex: 1; min-width: 140px; text-align: center; }
+
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="eyebrow">Earth Day 2025</div>
+    <h1>What's your carbon<br><em>footprint?</em></h1>
+    <p>14 questions, 5 minutes. Get your personal CO₂ estimate, tailored to life in Mauritius.</p>
+  </header>
+
+  <!-- ── QUIZ SCREEN ── -->
+  <div id="quiz-screen" style="width:100%;max-width:680px;">
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span id="prog-section"></span>
+        <span id="prog-counter">1 of 14</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:7%"></div>
+      </div>
+    </div>
+
+    <div class="card" id="question-card">
+      <div class="section-tag" id="q-section"></div>
+      <div class="question-text" id="q-text"></div>
+      <div class="hint-text" id="q-hint"></div>
+      <div class="options" id="options"></div>
+      <div class="nav">
+        <button class="btn" id="prev-btn" onclick="prevQ()" disabled>← Back</button>
+        <button class="btn btn-primary" id="next-btn" onclick="nextQ()" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULT SCREEN ── -->
+  <div id="result-screen" class="result-screen hidden">
+
+    <div class="score-hero">
+      <div class="label">Your annual carbon footprint</div>
+      <div class="score-num" id="r-total">0</div>
+      <div class="score-unit">tonnes CO₂ per year</div>
+      <div class="score-note">Mauritius grid is ~80% coal & oil — electricity carries a higher carbon weight than in many countries.</div>
+    </div>
+
+    <div class="benchmarks">
+      <div class="bench-card">
+        <div class="b-label">1.5°C target</div>
+        <div class="b-val">2.5 t</div>
+      </div>
+      <div class="bench-card">
+        <div class="b-label">Africa avg</div>
+        <div class="b-val">1.1 t</div>
+      </div>
+      <div class="bench-card">
+        <div class="b-label">Global avg</div>
+        <div class="b-val">4.0 t</div>
+      </div>
+      <div class="bench-card you">
+        <div class="b-label">Your score</div>
+        <div class="b-val" id="r-badge">–</div>
+      </div>
+    </div>
+
+    <div class="breakdown-card">
+      <h3>Where your emissions come from</h3>
+      <div id="breakdown-bars"></div>
+    </div>
+
+    <div class="tip-card">
+      <div class="tip-label">Your biggest opportunity</div>
+      <p id="tip-text"></p>
+    </div>
+
+    <!-- Submit to company dashboard -->
+    <div class="submit-block">
+      <h3>Share with the company dashboard</h3>
+      <p>Your score will be added anonymously to the team's consolidated results. Optionally enter your department so we can show breakdowns by team.</p>
+      <div class="submit-row">
+        <input type="text" id="dept-input" placeholder="Department (optional)" maxlength="60" />
+        <button class="btn btn-primary" onclick="submitResult()">Submit my score</button>
+      </div>
+      <div class="status-msg" id="status-msg"></div>
+    </div>
+
+    <div class="result-footer">
+      <button class="btn" onclick="retake()">Retake quiz</button>
+      <button class="btn btn-primary" onclick="shareResult()">Share my result</button>
+    </div>
+
+  </div>
+
+  <script>
+    // ════════════════════════════════════════════════════
+    // CONFIG — paste your Apps Script Web App URL here
+    // ════════════════════════════════════════════════════
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2bzWDBqzJ7-GoCdvpwuqWAPmetLxn2x1baGjeoMs3GzxAdnI7jIqSSOvccqMiBC-5/exec";
+
+    // ════════════════════════════════════════════════════
+    // QUESTIONS
+    // ════════════════════════════════════════════════════
+    const questions = [
+      {
+        section: "Transport",
+        text: "How do you mainly get to work each day?",
+        hint: "Mauritius has limited bus coverage outside main towns and no rail network.",
+        category: "transport",
+        options: [
+          { label: "Walk or cycle", co2: 0 },
+          { label: "Bus or van de transport", co2: 0.4 },
+          { label: "Carpool — shared ride with others", co2: 0.9 },
+          { label: "Car alone — short trip (under 15 km)", co2: 1.6 },
+          { label: "Car alone — long trip (15 km+)", co2: 2.8 }
+        ]
+      },
+      {
+        section: "Transport",
+        text: "What type of vehicle do you drive most often?",
+        hint: "Mauritian traffic congestion means engines idle longer, increasing real-world emissions.",
+        category: "transport",
+        options: [
+          { label: "I don't drive", co2: 0 },
+          { label: "Electric vehicle (EV)", co2: 0.6 },
+          { label: "Small petrol car (under 1500cc)", co2: 0.8 },
+          { label: "Mid-size petrol or diesel car", co2: 1.2 },
+          { label: "SUV, 4x4, or large pickup", co2: 1.8 }
+        ]
+      },
+      {
+        section: "Home energy",
+        text: "How much do you use air conditioning at home?",
+        hint: "Mauritius's grid is ~80% fossil fuel. AC is the single biggest home electricity drain on the island.",
+        category: "home",
+        options: [
+          { label: "No AC — fans only", co2: 0.1 },
+          { label: "AC in 1 room, occasionally (evenings/weekends)", co2: 0.6 },
+          { label: "AC in 1–2 rooms, most nights", co2: 1.2 },
+          { label: "AC throughout the home, most of the day", co2: 2.5 },
+          { label: "Heavy AC use — large home or always on", co2: 3.5 }
+        ]
+      },
+      {
+        section: "Home energy",
+        text: "How do you heat water at home?",
+        hint: "Solar chauffe-eau is common in Mauritius and makes a meaningful difference.",
+        category: "home",
+        options: [
+          { label: "Solar water heater (chauffe-eau solaire)", co2: 0.05 },
+          { label: "Mix of solar and electric booster", co2: 0.2 },
+          { label: "Electric geyser / immersion heater", co2: 0.7 },
+          { label: "Gas geyser (LPG)", co2: 0.4 }
+        ]
+      },
+      {
+        section: "Home energy",
+        text: "Do you have solar panels (PV) at home?",
+        hint: "Mauritius gets excellent sunshine year-round — solar PV significantly offsets grid dependence.",
+        category: "home",
+        options: [
+          { label: "Yes — covers most of our electricity", co2: -0.4 },
+          { label: "Yes — partial offset", co2: -0.2 },
+          { label: "No, but planning to install", co2: 0 },
+          { label: "No solar panels", co2: 0 }
+        ]
+      },
+      {
+        section: "Flights",
+        text: "How often do you take regional flights? (Réunion, Madagascar, Seychelles, Maldives)",
+        hint: "Short hops still add up — take-off and landing are the most fuel-intensive phases of any flight.",
+        category: "flights",
+        options: [
+          { label: "Never", co2: 0 },
+          { label: "Once every 2–3 years", co2: 0.05 },
+          { label: "Once a year", co2: 0.2 },
+          { label: "2–3 times a year", co2: 0.5 },
+          { label: "4+ times a year", co2: 0.9 }
+        ]
+      },
+      {
+        section: "Flights",
+        text: "How often do you take medium or long-haul flights? (South Africa, India, Europe, Asia…)",
+        hint: "A single return flight to Europe from Mauritius produces roughly 1.5–2 tonnes of CO₂ per passenger.",
+        category: "flights",
+        options: [
+          { label: "Never", co2: 0 },
+          { label: "Once every 2–3 years (long-haul)", co2: 0.6 },
+          { label: "Once a year — medium-haul (South Africa, India)", co2: 0.8 },
+          { label: "Once a year — long-haul (Europe, Asia)", co2: 1.8 },
+          { label: "2 long-haul flights per year", co2: 3.2 },
+          { label: "3+ long-haul or frequent work travel", co2: 5.0 }
+        ]
+      },
+      {
+        section: "Food",
+        text: "How would you describe your diet?",
+        hint: "Imported food (especially beef) carries a higher footprint in Mauritius due to shipping on top of production.",
+        category: "food",
+        options: [
+          { label: "Mostly local and plant-based (legumes, vegetables, fruit)", co2: 0.8 },
+          { label: "Vegetarian or mostly vegetarian", co2: 1.2 },
+          { label: "Balanced — chicken, fish, some red meat", co2: 1.8 },
+          { label: "Meat most days including imported beef", co2: 2.6 },
+          { label: "Heavy meat diet, lots of processed or imported food", co2: 3.2 }
+        ]
+      },
+      {
+        section: "Food",
+        text: "How much food do you typically waste at home?",
+        hint: "Food waste in landfill produces methane, which is far more potent than CO₂.",
+        category: "food",
+        options: [
+          { label: "Very little — we cook what we need", co2: 0.1 },
+          { label: "Some — occasional leftovers thrown away", co2: 0.35 },
+          { label: "Quite a bit — regular waste", co2: 0.7 }
+        ]
+      },
+      {
+        section: "Shopping",
+        text: "How often do you buy new clothes or shoes?",
+        hint: "Most clothing in Mauritius is imported — shipping and manufacturing both add to the footprint.",
+        category: "shopping",
+        options: [
+          { label: "Rarely — I wear things out or buy second-hand", co2: 0.2 },
+          { label: "A few items per season", co2: 0.6 },
+          { label: "Regular shopping — monthly or more", co2: 1.2 },
+          { label: "Frequent — lots of online orders or fast fashion", co2: 2.0 }
+        ]
+      },
+      {
+        section: "Shopping",
+        text: "How often do you buy new electronics or appliances?",
+        hint: "Electronics manufacturing is highly carbon-intensive, and all devices are shipped to the island.",
+        category: "shopping",
+        options: [
+          { label: "Rarely — I repair and keep devices long", co2: 0.1 },
+          { label: "A phone or small device every 2–3 years", co2: 0.3 },
+          { label: "New phone or laptop most years", co2: 0.7 },
+          { label: "2–3 devices or appliances per year", co2: 1.1 },
+          { label: "Multiple devices and appliances per year", co2: 1.6 }
+        ]
+      },
+      {
+        section: "Digital habits",
+        text: "How much time do you spend on your phone daily? (browsing, social media, apps)",
+        hint: "Every swipe connects to a data centre. Mobile networks and servers consume significant energy globally.",
+        category: "digital",
+        options: [
+          { label: "Under 1 hour", co2: 0.02 },
+          { label: "1–3 hours", co2: 0.06 },
+          { label: "3–5 hours", co2: 0.12 },
+          { label: "5–8 hours", co2: 0.18 },
+          { label: "8+ hours — heavy user", co2: 0.25 }
+        ]
+      },
+      {
+        section: "Digital habits",
+        text: "How much video do you stream per day? (YouTube, Netflix, TikTok, video calls…)",
+        hint: "Video streaming is the largest source of internet traffic. HD and 4K use significantly more energy than audio or browsing.",
+        category: "digital",
+        options: [
+          { label: "Rarely stream — mostly audio or text", co2: 0.02 },
+          { label: "Under 1 hour of video per day", co2: 0.05 },
+          { label: "1–3 hours per day (e.g. an evening series)", co2: 0.12 },
+          { label: "3–5 hours per day", co2: 0.20 },
+          { label: "5+ hours — TV on most of the day, heavy streaming", co2: 0.30 }
+        ]
+      },
+      {
+        section: "Digital habits",
+        text: "How would you describe your cloud and data habits?",
+        hint: "Cloud storage, auto-backups, large email inboxes, and thousands of photos all require servers running 24/7.",
+        category: "digital",
+        options: [
+          { label: "Minimal — I regularly delete files, emails and photos", co2: 0.02 },
+          { label: "Moderate — some cloud storage, occasional backups", co2: 0.06 },
+          { label: "Heavy — large Google Drive/iCloud, many apps syncing", co2: 0.12 },
+          { label: "Very heavy — multiple cloud services, large inboxes, video backups", co2: 0.20 }
+        ]
+      }
+    ];
+
+    // ════════════════════════════════════════════════════
+    // STATE
+    // ════════════════════════════════════════════════════
+    let current = 0;
+    let answers = new Array(questions.length).fill(null);
+    let finalScores = {};
+
+    // ════════════════════════════════════════════════════
+    // RENDER QUESTION
+    // ════════════════════════════════════════════════════
+    function render() {
+      const q = questions[current];
+      const total = questions.length;
+      const pct = Math.round(((current + 1) / total) * 100);
+
+      document.getElementById('prog-section').textContent = q.section;
+      document.getElementById('prog-counter').textContent = `${current + 1} of ${total}`;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('q-section').textContent = q.section;
+      document.getElementById('q-text').textContent = q.text;
+      document.getElementById('q-hint').textContent = q.hint || '';
+
+      const opts = document.getElementById('options');
+      opts.innerHTML = '';
+      q.options.forEach((o, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn' + (answers[current] === i ? ' selected' : '');
+        btn.textContent = o.label;
+        btn.onclick = () => select(i);
+        opts.appendChild(btn);
+      });
+
+      document.getElementById('prev-btn').disabled = current === 0;
+      document.getElementById('next-btn').disabled = answers[current] === null;
+      document.getElementById('next-btn').textContent = current === total - 1 ? 'See my result →' : 'Next →';
+
+      // Re-animate card
+      const card = document.getElementById('question-card');
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = 'fadeUp 0.3s ease';
+    }
+
+    function select(i) {
+      answers[current] = i;
+      document.querySelectorAll('.option-btn').forEach((b, j) => {
+        b.className = 'option-btn' + (j === i ? ' selected' : '');
+      });
+      document.getElementById('next-btn').disabled = false;
+    }
+
+    function nextQ() {
+      if (current < questions.length - 1) { current++; render(); }
+      else showResult();
+    }
+
+    function prevQ() {
+      if (current > 0) { current--; render(); }
+    }
+
+    function retake() {
+      current = 0;
+      answers = new Array(questions.length).fill(null);
+      document.getElementById('quiz-screen').classList.remove('hidden');
+      document.getElementById('result-screen').classList.add('hidden');
+      document.getElementById('status-msg').className = 'status-msg';
+      document.getElementById('dept-input').value = '';
+      render();
+    }
+
+    // ════════════════════════════════════════════════════
+    // CALCULATE & SHOW RESULT
+    // ════════════════════════════════════════════════════
+    function showResult() {
+      const cats = { transport: 0, home: 0, flights: 0, food: 0, shopping: 0, digital: 0 };
+      let total = 0;
+
+      questions.forEach((q, i) => {
+        const val = q.options[answers[i]].co2;
+        total += val;
+        cats[q.category] += val;
+      });
+
+      total = Math.max(0, Math.round(total * 10) / 10);
+      Object.keys(cats).forEach(k => {
+        cats[k] = Math.max(0, Math.round(cats[k] * 10) / 10);
+      });
+
+      finalScores = { total, ...cats };
+
+      document.getElementById('quiz-screen').classList.add('hidden');
+      document.getElementById('result-screen').classList.remove('hidden');
+      document.getElementById('r-total').textContent = total.toFixed(1);
+      document.getElementById('r-badge').textContent = total.toFixed(1) + ' t';
+
+      // Breakdown bars
+      const catLabels = {
+        transport: 'Transport',
+        home: 'Home & AC',
+        flights: 'Flights',
+        food: 'Food',
+        shopping: 'Shopping',
+        digital: 'Digital'
+      };
+
+      const maxVal = Math.max(...Object.values(cats), 0.1);
+      const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+      const barsEl = document.getElementById('breakdown-bars');
+      barsEl.innerHTML = '';
+
+      sorted.forEach(([k, v]) => {
+        const pct = Math.round((v / maxVal) * 100);
+        const cls = pct > 66 ? 'high' : pct > 33 ? 'mid' : 'low';
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-label">${catLabels[k]}</div>
+          <div class="bar-track"><div class="bar-fill ${cls}" style="width:0%" data-pct="${pct}"></div></div>
+          <div class="bar-val">${v.toFixed(1)} t</div>
+        `;
+        barsEl.appendChild(row);
+      });
+
+      // Animate bars after paint
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.querySelectorAll('.bar-fill').forEach(el => {
+            el.style.width = el.dataset.pct + '%';
+          });
+        }, 100);
+      });
+
+      // Tip
+      const topCat = sorted[0][0];
+      const tips = {
+        transport: "Your daily commute is your top emitter. Carpooling 2–3 days a week can cut this significantly. EVs are increasingly available in Mauritius — IFCM offers leasing at 3% over 10 years.",
+        home: "AC is the biggest culprit. Setting your unit to 24–25°C instead of 18–20°C and using ceiling fans can cut consumption by 30–40%. A solar PV system would offset much of this — government loans at 2% are available.",
+        flights: "Flights dominate your footprint. Combining trips, flying economy (business class has 3× the footprint), and skipping one long-haul trip every few years makes a real difference.",
+        food: "Diet is your biggest driver. Mauritius has excellent local produce — shifting toward more dhal, légumes, and locally caught fish over imported beef can meaningfully reduce your score.",
+        shopping: "Imported goods carry a hidden shipping footprint on top of manufacturing. Buying local, repairing devices, and slowing fashion purchases are the highest-leverage changes here.",
+        digital: "Your digital habits add up more than you'd expect. Switching to SD instead of 4K, doing regular email and cloud purges, and using Wi-Fi instead of mobile data all reduce your data centre footprint."
+      };
+      document.getElementById('tip-text').textContent = tips[topCat];
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ════════════════════════════════════════════════════
+    // SUBMIT TO GOOGLE SHEETS
+    // ════════════════════════════════════════════════════
+    function submitResult() {
+      const msgEl = document.getElementById('status-msg');
+      const dept = document.getElementById('dept-input').value.trim();
+
+      if (APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
+        msgEl.className = 'status-msg error';
+        msgEl.textContent = "Setup needed: please add the Apps Script URL to the HTML file. See the setup instructions in the code comments.";
+        return;
+      }
+
+      msgEl.className = 'status-msg';
+      msgEl.textContent = '';
+
+      const payload = {
+        total: finalScores.total,
+        transport: finalScores.transport,
+        home: finalScores.home,
+        flights: finalScores.flights,
+        food: finalScores.food,
+        shopping: finalScores.shopping,
+        digital: finalScores.digital,
+        department: dept
+      };
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        msgEl.className = 'status-msg success';
+        msgEl.textContent = "Your score has been submitted. Thank you for contributing to the team dashboard!";
+        document.querySelector('.submit-block .btn-primary').disabled = true;
+        document.querySelector('.submit-block .btn-primary').textContent = "Submitted";
+      })
+      .catch(() => {
+        msgEl.className = 'status-msg error';
+        msgEl.textContent = "Something went wrong. Please try again or contact the organiser.";
+      });
+    }
+
+    // ════════════════════════════════════════════════════
+    // SHARE RESULT
+    // ════════════════════════════════════════════════════
+    function shareResult() {
+      const text = `I just calculated my carbon footprint — ${finalScores.total.toFixed(1)} tonnes CO₂/year. How does yours compare? Take the quiz: ${window.location.href}`;
+      if (navigator.share) {
+        navigator.share({ title: 'My Carbon Footprint', text });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => alert('Result copied to clipboard!'));
+      } else {
+        alert(text);
+      }
+    }
+
+    // ════════════════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════════════════
+    render();
+  </script>
+
+</body>
+</html>
