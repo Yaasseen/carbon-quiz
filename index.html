@@ -25,6 +25,9 @@
      H: Food
      I: Shopping
      J: Digital
+     K: Waste
+     L: Water
+     M: Lifestyle
 
   STEP 2 — Create the Apps Script
   ----------------------------------
@@ -47,7 +50,10 @@
       data.flights,
       data.food,
       data.shopping,
-      data.digital
+      data.digital,
+      data.waste,
+      data.water,
+      data.lifestyle
     ]);
     return ContentService
       .createTextOutput(JSON.stringify({ status: "ok" }))
@@ -586,7 +592,7 @@
   <header class="site-header">
     <div class="eyebrow">Earth Day 2025</div>
     <h1>What's your carbon<br><em>footprint?</em></h1>
-    <p>14 questions, 5 minutes. Get your personal CO₂ estimate, tailored to life in Mauritius.</p>
+    <p>20 questions, 5 minutes. Get your personal CO₂ estimate, tailored to life in Mauritius.</p>
   </header>
 
   <!-- ── QUIZ SCREEN ── -->
@@ -677,7 +683,7 @@
     // ════════════════════════════════════════════════════
     // CONFIG — paste your Apps Script Web App URL here
     // ════════════════════════════════════════════════════
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIcqqA_SUjmO_Dq1XlhLJkGcL8_GUh56AuojmbszQEz4ZPe8XuaH3321jfy74rVZ-b/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk5JsUk0z7u5KyLH4LA7bahtJGTpZrqGT6fZ3TTCxb-Vs9ROgJnSWFNXL68IEvq4p7/exec";
 
     // ════════════════════════════════════════════════════
     // QUESTIONS
@@ -704,6 +710,7 @@
         options: [
           { label: "I don't drive", co2: 0 },
           { label: "Electric vehicle (EV)", co2: 0.6 },
+          { label: "Hybrid car", co2: 0.9 },
           { label: "Small petrol car (under 1500cc)", co2: 0.8 },
           { label: "Mid-size petrol or diesel car", co2: 1.2 },
           { label: "SUV, 4x4, or large pickup", co2: 1.8 }
@@ -781,7 +788,8 @@
         options: [
           { label: "Mostly local and plant-based (legumes, vegetables, fruit)", co2: 0.8 },
           { label: "Vegetarian or mostly vegetarian", co2: 1.2 },
-          { label: "Balanced — chicken, fish, some red meat", co2: 1.8 },
+          { label: "Chicken and fish/seafood only — no red meat", co2: 1.5 },
+          { label: "Balanced — chicken, fish/seafood, some red meat", co2: 1.8 },
           { label: "Meat most days including imported beef", co2: 2.6 },
           { label: "Heavy meat diet, lots of processed or imported food", co2: 3.2 }
         ]
@@ -858,6 +866,81 @@
           { label: "Moderate — some cloud storage, occasional backups", co2: 0.06 },
           { label: "Heavy — large Google Drive/iCloud, many apps syncing", co2: 0.12 },
           { label: "Very heavy — multiple cloud services, large inboxes, video backups", co2: 0.20 }
+        ]
+      },
+      {
+        section: "Waste & recycling",
+        text: "How do you handle household waste at home?",
+        hint: "Mauritius sends most waste to the Mare Chicose landfill. Organic waste in landfill produces methane, a potent greenhouse gas. Recycling facilities are limited but growing.",
+        category: "waste",
+        options: [
+          { label: "I compost food scraps and recycle paper, plastic and glass", co2: 0.1 },
+          { label: "I recycle some items but don't compost", co2: 0.25 },
+          { label: "I separate some waste occasionally", co2: 0.45 },
+          { label: "Everything goes in the same bin — no sorting", co2: 0.65 }
+        ]
+      },
+      {
+        section: "Waste & recycling",
+        text: "How do you handle single-use plastics and packaging?",
+        hint: "Mauritius banned single-use plastic bags in 2020, but bottles, straws and packaging remain common. Plastic production is carbon-intensive and most ends up in landfill or the ocean.",
+        category: "waste",
+        options: [
+          { label: "I actively avoid them — reusable bags, bottles and containers", co2: 0.05 },
+          { label: "I try to reduce but still use some occasionally", co2: 0.15 },
+          { label: "I use single-use packaging regularly", co2: 0.30 },
+          { label: "I rarely think about it — heavy single-use consumption", co2: 0.50 }
+        ]
+      },
+      {
+        section: "Water usage",
+        text: "How would you describe your household water habits?",
+        hint: "Pumping, treating and heating water all require energy. Mauritius faces periodic water stress — conservation matters both for emissions and for the island's water supply.",
+        category: "water",
+        options: [
+          { label: "Very mindful — short showers, no leaks, efficient appliances", co2: 0.05 },
+          { label: "Fairly careful — aware of usage, occasional waste", co2: 0.12 },
+          { label: "Average — long showers, dishwasher, garden watering", co2: 0.22 },
+          { label: "High usage — frequent long showers, pool, heavy garden watering", co2: 0.38 }
+        ]
+      },
+      {
+        section: "Pets",
+        text: "Do you have pets at home?",
+        hint: "Pets have a carbon footprint mainly through their food — meat-based pet food is resource-intensive. Larger animals like dogs have a significantly higher footprint than cats or small animals.",
+        category: "lifestyle",
+        options: [
+          { label: "No pets", co2: 0 },
+          { label: "Small pets only — fish, birds, hamsters, rabbits", co2: 0.05 },
+          { label: "One cat", co2: 0.15 },
+          { label: "One dog (small to medium breed)", co2: 0.35 },
+          { label: "One large dog or multiple dogs", co2: 0.65 },
+          { label: "Multiple pets including dogs and cats", co2: 0.80 }
+        ]
+      },
+      {
+        section: "Social & leisure",
+        text: "How do you typically spend your weekends and social time?",
+        hint: "Leisure choices matter. Concerts, beach barbecues, and restaurant meals all carry a footprint — but so does staying home with the AC blasting and the TV on all day.",
+        category: "lifestyle",
+        options: [
+          { label: "Mostly outdoor low-impact activities — hiking, beach, cycling", co2: 0.05 },
+          { label: "Mix of home-based and going out — restaurants, cinema, events", co2: 0.15 },
+          { label: "Regularly dining out, attending events, social gatherings most weekends", co2: 0.30 },
+          { label: "Very active social life — frequent events, nightlife, travel within the island", co2: 0.50 }
+        ]
+      },
+      {
+        section: "Social & leisure",
+        text: "When you attend events or gatherings, how do you usually get there?",
+        hint: "Mauritius has limited public transport in the evenings and on weekends — most people default to private cars for social outings, which adds up.",
+        category: "transport",
+        options: [
+          { label: "I rarely attend events outside my neighbourhood", co2: 0 },
+          { label: "I carpool or share rides with others going to the same event", co2: 0.05 },
+          { label: "I drive my own car most of the time", co2: 0.20 },
+          { label: "I use a taxi or rideshare app", co2: 0.12 },
+          { label: "I drive a large vehicle and often go alone", co2: 0.35 }
         ]
       }
     ];
@@ -940,7 +1023,7 @@
     // CALCULATE & SHOW RESULT
     // ════════════════════════════════════════════════════
     function showResult() {
-      const cats = { transport: 0, home: 0, flights: 0, food: 0, shopping: 0, digital: 0 };
+      const cats = { transport: 0, home: 0, flights: 0, food: 0, shopping: 0, digital: 0, waste: 0, water: 0, lifestyle: 0 };
       let total = 0;
 
       questions.forEach((q, i) => {
@@ -968,7 +1051,10 @@
         flights: 'Flights',
         food: 'Food',
         shopping: 'Shopping',
-        digital: 'Digital'
+        digital: 'Digital',
+        waste: 'Waste',
+        water: 'Water',
+        lifestyle: 'Lifestyle'
       };
 
       const maxVal = Math.max(...Object.values(cats), 0.1);
@@ -1006,7 +1092,10 @@
         flights: "Flights dominate your footprint. Combining trips, flying economy (business class has 3× the footprint), and skipping one long-haul trip every few years makes a real difference.",
         food: "Diet is your biggest driver. Mauritius has excellent local produce — shifting toward more dhal, légumes, and locally caught fish over imported beef can meaningfully reduce your score.",
         shopping: "Imported goods carry a hidden shipping footprint on top of manufacturing. Buying local, repairing devices, and slowing fashion purchases are the highest-leverage changes here.",
-        digital: "Your digital habits add up more than you'd expect. Switching to SD instead of 4K, doing regular email and cloud purges, and using Wi-Fi instead of mobile data all reduce your data centre footprint."
+        digital: "Your digital habits add up more than you'd expect. Switching to SD instead of 4K, doing regular email and cloud purges, and using Wi-Fi instead of mobile data all reduce your data centre footprint.",
+        waste: "Waste is your biggest opportunity. Starting a compost bin for food scraps is the single most impactful change — it diverts organic waste from Mare Chicose landfill and eliminates the methane it would have produced. Pair it with a reusable bottle and bag habit.",
+        water: "Water use is your top area to address. Shorter showers, fixing leaks promptly, and switching to a low-flow showerhead can cut household water energy by up to 40%. If you have a garden, watering at dawn or dusk significantly reduces evaporation loss.",
+        lifestyle: "Your social and leisure habits are adding up. The biggest lever is how you get to events — carpooling or sharing a ride with friends going the same way instantly halves the transport footprint of a night out. For pets, switching to a partially plant-based pet food brand can reduce their footprint by 20–30%."
       };
       document.getElementById('tip-text').textContent = tips[topCat];
 
@@ -1039,7 +1128,10 @@
         flights: finalScores.flights,
         food: finalScores.food,
         shopping: finalScores.shopping,
-        digital: finalScores.digital
+        digital: finalScores.digital,
+        waste: finalScores.waste,
+        water: finalScores.water,
+        lifestyle: finalScores.lifestyle
       };
 
       fetch(APPS_SCRIPT_URL, {
